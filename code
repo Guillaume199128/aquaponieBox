@@ -1,0 +1,385 @@
+#include <SPI.h>
+#define BLYNK_TEMPLATE_ID "xxxxxxxx"
+#define BLYNK_DEVICE_NAME "xxxxxxxx"
+
+#define BLYNK_FIRMWARE_VERSION        "0.1.0"
+
+#define BLYNK_PRINT Serial
+//#define BLYNK_DEBUG
+
+#define APP_DEBUG
+
+// Uncomment your board, or configure a custom board in Settings.h
+//#define USE_WROVER_BOARD
+
+#include "BlynkEdgent.h"
+
+
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+
+#include <Wire.h>
+
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+
+    #include <FastLED.h>
+    #define NUM_LEDS 4
+    #define DATA_PIN 13
+
+     CRGB leds[NUM_LEDS];
+
+
+
+const int relais1 = 14;
+const int btn1 = 27;
+const int ledV1 = 5;
+const int ledR1 = 2;
+
+
+const int relais2 = 32;
+const int btn2 = 26;
+const int ledV2 = 18;
+const int ledR2 = 4;
+
+
+const int relais3 = 15;
+const int btn3 = 25;
+const int ledV3 = 19;
+const int ledR3 = 16;
+
+const int relais4 = 12;
+const int btn4 = 33;
+const int ledV4 = 17;
+const int ledR4 = 17;
+
+// one wire temperature
+#define ONE_WIRE_BUS 23
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+int deviceCount = 3;
+float tempC;
+
+
+
+
+
+
+
+void temperature();
+
+int relais1Sate = LOW;
+int btn1State = HIGH;
+
+int relais2Sate = LOW;
+int btn2State = HIGH;
+
+int relais3Sate = LOW;
+int btn3State = HIGH;
+
+int relais4Sate = LOW;
+int btn4State = HIGH;
+
+int brightness = 50;
+
+int lcd_position[] = {16, 30, 44}; // position temperature sur l'écran
+
+
+
+BLYNK_WRITE(V1) {
+  relais1Sate = param.asInt();
+  Serial.print("Widget Button V1 changed. Writing ");
+  Serial.print(relais1Sate);
+  Serial.print(" to Relay 1 and LED V1, and ");
+  Serial.print(!relais1Sate);
+  Serial.println(" to LED R1 ...");
+
+  digitalWrite(relais1, !relais1Sate);
+  //digitalWrite (DATA_PIN, !relais1Sate);
+  //leds[1] = CRGB::Blue;
+  //FastLED.show();
+   // digitalWrite (DATA_PIN, relais1Sate);
+  //leds[1] = CRGB::White;
+  
+  //FastLED.show(); 
+
+
+
+}
+
+BLYNK_WRITE(V2) {
+  relais2Sate = param.asInt();
+  digitalWrite(relais2, !relais2Sate);
+  digitalWrite(ledV2, !relais2Sate);
+  digitalWrite(ledR2, relais2Sate);
+
+
+}
+
+BLYNK_WRITE(V3) {
+  relais3Sate = param.asInt();
+  digitalWrite(relais3, !relais3Sate);
+  digitalWrite(ledV3, !relais3Sate);
+  digitalWrite(ledR3, relais3Sate);
+
+
+}
+
+BLYNK_WRITE(V4) {
+  relais4Sate = param.asInt();
+  digitalWrite(relais4, !relais4Sate);
+  digitalWrite(ledV4, !relais4Sate);
+  digitalWrite(ledR4, relais4Sate);
+
+
+}
+
+void temperature()
+{
+  display.clearDisplay();
+  display.display();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+
+
+  display.setCursor(0, 0);
+  display.println("---------------------");
+  display.setCursor(0, 6);
+  display.print("|    Temperature    |");
+  display.setCursor(0, 12);
+  display.println("---------------------");
+
+  display.setCursor(0, 16); // position 0
+  display.println(" Interieur  |");
+  display.print("---------------------");
+  display.display();
+
+  display.setCursor(0, 30); // position 1
+  display.println(" Exterrieur |");
+  display.print("---------------------");
+  display.display();
+
+  display.setCursor(0, 44); // position 2
+  display.println(" Eau        |");
+  display.print("---------------------");
+  display.display();
+
+
+
+
+  // Send command to all the sensors for temperature conversion
+  sensors.requestTemperatures();
+
+  // Display temperature from each sensor
+  for (int i = 0;  i < deviceCount;  i++)
+  {
+
+    tempC = sensors.getTempCByIndex(i);
+    Blynk.virtualWrite(i + 21, tempC);
+    display.setCursor(80, lcd_position[i]);
+    display.print(tempC);
+    display.display();
+
+
+  }
+}
+
+
+
+void checkPhysicalButton1()
+{
+  if (digitalRead(btn1) == LOW)
+  {
+ 
+    // btnState is used to avoid sequential toggles
+    if (btn1State != LOW)
+    {
+
+
+      // Toggle LED state
+      relais1Sate = !relais1Sate;
+
+      digitalWrite(relais1, !relais1Sate);
+
+
+      
+      leds[1] = CRGB::Black,!relais2Sate;
+      FastLED.show();
+     
+        leds[1] = CRGB::White, relais2Sate;
+     FastLED.show(); 
+
+      // Update Button Widget
+
+      Blynk.virtualWrite(V1, relais1Sate);
+
+     
+
+      btn1State = LOW;
+    }
+  }
+  else
+  {
+    btn1State = HIGH;
+  }
+
+
+
+
+
+
+ if (digitalRead(btn2) == LOW)
+  {
+    // btnState is used to avoid sequential toggles
+    if (btn2State != LOW)
+    {
+      // Toggle LED state
+      relais2Sate = !relais2Sate;
+      digitalWrite(relais2, !relais2Sate);
+      digitalWrite(ledV2, !relais2Sate);
+      digitalWrite(ledR2, relais2Sate);
+
+      // Update Button Widget
+      Blynk.virtualWrite(V2, relais2Sate);
+
+      btn2State = LOW;
+    }
+  }
+  else
+  {
+    btn2State = HIGH;
+  }
+
+    if (digitalRead(btn3) == LOW)
+  {
+    // btnState is used to avoid sequential toggles
+    if (btn3State != LOW)
+    {
+      // Toggle LED state
+      relais3Sate = !relais3Sate;
+      digitalWrite(relais3, !relais3Sate);
+      digitalWrite(ledV3, !relais3Sate);
+      digitalWrite(ledR3, relais3Sate);
+
+      // Update Button Widget
+      Blynk.virtualWrite(V3, relais3Sate);
+
+      btn3State = LOW;
+    }
+  }
+  else
+  {
+    btn3State = HIGH;
+  }
+
+  
+
+     if (digitalRead(btn4) == LOW)
+  {
+    // btnState is used to avoid sequential toggles
+    if (btn4State != LOW)
+    {
+      // Toggle LED state
+      relais4Sate = !relais4Sate;
+      digitalWrite(relais4, !relais4Sate);
+      digitalWrite(ledV4, !relais4Sate);
+      digitalWrite(ledR4, relais4Sate);
+
+      // Update Button Widget
+      Blynk.virtualWrite(V4, relais4Sate);
+
+      btn4State = LOW;
+    }
+  }
+  else
+  {
+    btn4State = HIGH;
+  }
+   }
+
+
+
+BLYNK_CONNECTED()
+{
+  Blynk.syncVirtual(V1);
+  Blynk.syncVirtual(V2);
+  Blynk.syncVirtual(V3);
+  Blynk.syncVirtual(V4);
+
+}
+
+void checkPhysicalButton1();
+
+
+
+
+
+void setup()
+{
+  Serial.begin(115200);
+  delay(100);
+
+  BlynkEdgent.begin();
+
+  sensors.begin();  // debut de la librairie capteur de température
+  // Debug console
+       FastLED.addLeds<NEOPIXEL, DATA_PIN>(leds, NUM_LEDS);
+
+
+  pinMode(relais1, OUTPUT);
+  pinMode(btn1, INPUT_PULLUP);
+  digitalWrite(relais1, relais1Sate);
+  //pinMode(ledV1, OUTPUT);
+  //pinMode(ledR1, OUTPUT);
+
+  pinMode(relais2, OUTPUT);
+  pinMode(btn2, INPUT_PULLUP);
+  digitalWrite(relais2, relais2Sate);
+  //pinMode(ledV2, OUTPUT);
+  //pinMode(ledR2, OUTPUT);
+
+  pinMode(relais3, OUTPUT);
+  pinMode(btn3, INPUT_PULLUP);
+  digitalWrite(relais3, relais3Sate);
+  //pinMode(ledV3, OUTPUT);
+  //pinMode(ledR3, OUTPUT);
+
+  pinMode(relais4, OUTPUT);
+  pinMode(btn4, INPUT_PULLUP);
+  digitalWrite(relais4, relais4Sate);
+  //pinMode(ledV4, OUTPUT);
+  //pinMode(ledR4, OUTPUT);
+
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3D for 128x64
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;); // Don't proceed, loop forever
+  }
+
+  // Clear the buffer
+  display.clearDisplay();
+  display.display();
+
+
+  timer.setInterval(100L, checkPhysicalButton1);
+
+
+  timer.setInterval(10000L, temperature);
+
+
+}
+
+
+
+void loop() {
+  BlynkEdgent.run();
+  timer.run();
+}
